@@ -6,6 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(GTest)
-find_package(Boost 1.53 REQUIRED COMPONENTS system thread)
+find_package(Boost 1.53 REQUIRED COMPONENTS system thread chrono)
 enable_testing()
 add_subdirectory(tests)

@@ -8,6 +8,7 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     add_executable("${TEST_NAME}" "${TEST_SOURCE}")
     target_link_libraries(${TEST_NAME} PUBLIC Boost::system)
     target_link_libraries(${TEST_NAME} PUBLIC Boost::thread)
+    target_link_libraries(${TEST_NAME} PUBLIC Boost::chrono)
     target_link_libraries(${TEST_NAME} PUBLIC GTest::GTest GTest::Main)
     add_test(
         NAME "${TEST_NAME}"
