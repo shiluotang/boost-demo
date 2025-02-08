@@ -35,14 +35,11 @@ std::string timestamp(std::chrono::time_point<Clock> const &tp) {
     duration d = tp.time_since_epoch();
     std::time_t t = duration_cast<seconds>(d).count();
     struct tm *tm_ptr = std::localtime(&t);
-    std::vector<char> buffer(50);
-    size_t n = std::strftime(&buffer[0], buffer.size(), "%F %T", tm_ptr);
-    if (n <= 0)
-        throw std::runtime_error("strftime");
     std::ostringstream oss;
-    oss << &buffer[0];
+    oss << std::put_time(tm_ptr, "%F %T");
     oss << "." << std::setw(3) << std::setfill('0')
         << duration_cast<milliseconds>(d - duration_cast<seconds>(d)).count();
+    oss << " " << std::put_time(tm_ptr, "%z");
     return oss.str();
 }
 
@@ -55,14 +52,11 @@ std::string timestamp(boost::chrono::time_point<Clock> const &tp) {
     duration d = tp.time_since_epoch();
     std::time_t t = duration_cast<seconds>(d).count();
     struct tm *tm_ptr = std::localtime(&t);
-    std::vector<char> buffer(50);
-    size_t n = std::strftime(&buffer[0], buffer.size(), "%F %T %z", tm_ptr);
-    if (n <= 0)
-        throw std::runtime_error("strftime");
     std::ostringstream oss;
-    oss << &buffer[0];
+    oss << std::put_time(tm_ptr, "%F %T");
     oss << "." << std::setw(3) << std::setfill('0')
         << duration_cast<milliseconds>(d - duration_cast<seconds>(d)).count();
+    oss << " " << std::put_time(tm_ptr, "%z");
     return oss.str();
 }
 
