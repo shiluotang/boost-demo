@@ -1,0 +1,8 @@
+ACLOCAL_AMFLAGS = -I m4
+
+AM_CPPFLAGS = 
+AM_CFLAGS 	= 
+AM_CXXFLAGS = 
+AM_LDFLAGS 	= 
+
+SUBDIRS = src tests
