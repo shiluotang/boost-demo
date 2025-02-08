@@ -158,18 +158,16 @@ class thread_pool {
         };
 
         template <
-            typename Rep0,
-            typename Period0,
-            typename Rep1,
-            typename Period1,
+            typename Duration0,
+            typename Duration1,
             typename F
                  >
         // boost::shared_ptr<waitable_timer_type>
         void
         fixed_delay(
                 F &&fn,
-                boost::chrono::duration<Rep0, Period0> const &d0,
-                boost::chrono::duration<Rep1, Period1> const &d1) {
+                Duration0 const &d0,
+                Duration1 const &d1) {
             time_point_sequencer seq(clock_type::now(), d0, d1);
             return fixed_delay<F>(boost::forward<F&&>(fn), seq);
         }
@@ -179,8 +177,6 @@ class thread_pool {
         void
         fixed_delay(F &&fn, time_point_sequencer seq) {
             // scoped shared_ptr destruction lead to schedule cancellation
-            boost::async([]{});
-            boost::promise<void> p;
             boost::shared_ptr<waitable_timer_type> wait_timer(
                     new waitable_timer_type(this->get_service()));
             wait_timer->expires_at(seq.next());
@@ -193,6 +189,8 @@ class thread_pool {
                         } else {
                             LOGI("ec = " << ec << ", " << ec.message());
                             if (ec == boost::asio::error::operation_aborted) {
+                                // require mutable lambda, otherwise wait_timer
+                                // is captured as const
                                 wait_timer.reset();
                             }
                         }
@@ -430,7 +428,7 @@ TEST(boost_async, test_pool) {
             milliseconds(1)
             );
     ptr_to_f.reset();
-    boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
+    sleep_for(milliseconds(1000));
     p.shutdown();
     }
     LOGI("counter = " << counter);
