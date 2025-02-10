@@ -8,6 +8,7 @@
 // #include <boost/asio/steady_timer.hpp>
 // #include <boost/asio/system_timer.hpp>
 // #include <boost/asio/high_resolution_timer.hpp>
+#include <boost/bind/placeholders.hpp>
 
 #include "logging.hh"
 
@@ -115,6 +116,9 @@ class thread_pool2 {
             }
 
             void start() {
+#if BOOST_VERSION > 105300
+                using boost::placeholders::_1;
+#endif
                 LOG_FUNC_ENTRY();
                 if (!_M_wait_timer)
                     _M_wait_timer = boost::shared_ptr<timer_type>(
@@ -127,7 +131,7 @@ class thread_pool2 {
                     LOGD("_M_timeout_handler = boost::bind(...)");
                     _M_timeout_handler = boost::bind(
                             &on_timer_expire,
-                            ::_1,
+                            _1,
                             wself);
                     LOGD("self.use_count() = " << self.use_count());
                 }
