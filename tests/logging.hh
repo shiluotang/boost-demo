@@ -2,6 +2,7 @@
 #define LOGGING_HH_INCLUDED
 
 #include <iomanip>
+#include <iostream>
 #include <string>
 
 #include <chrono>

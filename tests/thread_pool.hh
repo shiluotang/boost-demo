@@ -14,8 +14,7 @@ class thread_pool {
     public:
         typedef boost::asio::io_service service_type;
         typedef boost::chrono::system_clock clock_type;
-        typedef boost::asio::basic_waitable_timer<clock_type>
-            waitable_timer_type;
+        typedef boost::asio::basic_waitable_timer<clock_type> timer_type;
 
         explicit
         thread_pool(
@@ -86,7 +85,7 @@ class thread_pool {
             typename Duration1,
             typename F
                  >
-        // boost::shared_ptr<waitable_timer_type>
+        // boost::shared_ptr<timer_type>
         void
         fixed_rate(
                 F &&fn,
@@ -97,12 +96,12 @@ class thread_pool {
         }
 
         template <typename F>
-        // boost::shared_ptr<waitable_timer_type>
+        // boost::shared_ptr<timer_type>
         void
         fixed_rate(F &&fn, time_point_sequencer seq) {
             // scoped shared_ptr destruction lead to schedule cancellation
-            boost::shared_ptr<waitable_timer_type> wait_timer(
-                    new waitable_timer_type(this->get_service()));
+            boost::shared_ptr<timer_type> wait_timer(
+                    new timer_type(this->get_service()));
             wait_timer->expires_at(seq.next());
             wait_timer->async_wait(
                     [this, fn, wait_timer, seq]
@@ -115,6 +114,7 @@ class thread_pool {
                             if (ec == boost::asio::error::operation_aborted) {
                                 // require mutable lambda, otherwise wait_timer
                                 // is captured as const
+                                LOGD("wait_timer.reset()");
                                 wait_timer.reset();
                             }
                         }

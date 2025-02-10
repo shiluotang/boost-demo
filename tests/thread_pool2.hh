@@ -241,7 +241,7 @@ class thread_pool2 {
             typename Duration1,
             typename F
                  >
-        // boost::shared_ptr<waitable_timer_type>
+        // boost::shared_ptr<timer_type>
         void
         fixed_rate(
                 F &&fn,
@@ -254,7 +254,7 @@ class thread_pool2 {
 
 
         template <typename F>
-        // boost::shared_ptr<waitable_timer_type>
+        // boost::shared_ptr<timer_type>
         void
         fixed_rate(F &&fn, time_point_sequencer seq) {
             boost::shared_ptr<runner> r(new runner(
