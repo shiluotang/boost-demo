@@ -27,6 +27,7 @@
 #include "logging.hh"
 #include "thread_pool.hh"
 #include "thread_pool2.hh"
+#include "thread_pool3.hh"
 
 namespace {
 
@@ -51,9 +52,9 @@ TEST(boost_async, test_pool) {
     using boost::this_thread::sleep_for;
     boost::atomic_int counter(0);
     {
-    thread_pool2 p(1);
+    thread_pool3 p(1);
     boost::shared_ptr<foo> ptr_to_f(new foo("outside-lambda"));
-    p.fixed_rate([&counter, ptr_to_f]() {
+    auto x = p.fixed_rate([&counter, ptr_to_f]() {
                 foo f2("inside-lambda");
                 // sleep_for(milliseconds(10));
                 LOGI("hello " << __PRETTY_FUNCTION__);
@@ -64,7 +65,13 @@ TEST(boost_async, test_pool) {
             );
     ptr_to_f.reset();
     sleep_for(milliseconds(1000));
+    LOGI("x->stop()");
+    x->stop();
+    LOGI("x.reset()");
+    x.reset();
+    LOGI("p.shutdown()");
     p.shutdown();
+    LOGI("sleep_for(milliseconds(10))");
     sleep_for(milliseconds(10));
     }
     LOGI("counter = " << counter);
