@@ -4,6 +4,7 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/future.hpp>
+#include <boost/thread/mutex.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 // #include <boost/asio/steady_timer.hpp>
@@ -101,7 +102,8 @@ class thread_pool3 {
                     boost::asio::io_service &srv,
                     time_point_sequencer const &seq,
                     function_type &&f)
-                : _M_group(group)
+                : _M_received_stop_signal(false)
+                , _M_group(group)
                 , _M_service(srv)
                 , _M_wait_timer(new timer_type(srv))
                 , _M_seq(seq)
@@ -114,7 +116,7 @@ class thread_pool3 {
             ~runner() {
                 LOG_FUNC_ENTRY();
                 // call shared_from_this in destructor will throw bad_weak_ptr
-                this->stop(false);
+                this->stop();
             }
 
             void start() {
@@ -122,9 +124,7 @@ class thread_pool3 {
                 using boost::placeholders::_1;
 #endif
                 LOG_FUNC_ENTRY();
-                boost::promise<void> p;
-                boost::packaged_task<void> pt;
-                boost::unique_future<void> f;
+                _M_received_stop_signal = false;
                 if (!_M_wait_timer)
                     _M_wait_timer = boost::shared_ptr<timer_type>(
                             new timer_type(_M_service));
@@ -148,8 +148,9 @@ class thread_pool3 {
                 LOGD("self.use_count() = " << self.use_count());
             }
 
-            void stop(bool remove_from_group = true) {
+            void stop() {
                 LOG_FUNC_ENTRY();
+                _M_received_stop_signal = true;
                 if (!!_M_wait_timer) {
                     LOGD("_M_wait_timer->cancel()");
                     _M_wait_timer->cancel();
@@ -164,10 +165,8 @@ class thread_pool3 {
                     LOGD("_M_func = 0");
                     _M_func = 0;
                 }
-                if (remove_from_group) {
-                    LOGD("_M_group.erase(this->shared_from_this())");
-                    _M_group.erase(this->shared_from_this());
-                }
+                LOGD("_M_group.erase(this->shared_from_this())");
+                _M_group.erase(this);
             }
 
             operator bool() const { return !!_M_func; }
@@ -177,9 +176,13 @@ class thread_pool3 {
                 time_point_sequencer::time_point tp = _M_seq.next();
                 if (!!_M_func) {
                     _M_func();
-                    // schedule next round.
-                    _M_wait_timer->expires_at(tp);
-                    _M_wait_timer->async_wait(_M_timeout_handler);
+                    // increase reference counter to prevent pointer dangling
+                    boost::shared_ptr<timer_type> w = _M_wait_timer;
+                    if (!!w && !_M_received_stop_signal) {
+                        // schedule next round.
+                        w->expires_at(tp);
+                        w->async_wait(_M_timeout_handler);
+                    }
                 }
             }
 
@@ -198,6 +201,7 @@ class thread_pool3 {
                 ref->do_run();
             }
 
+            volatile bool _M_received_stop_signal;
             runner_group &_M_group;
             boost::asio::io_service &_M_service;
             boost::shared_ptr<timer_type> _M_wait_timer;
@@ -230,6 +234,19 @@ class thread_pool3 {
                     return false;
                 _M_runners.erase(it);
                 return true;
+            }
+
+            bool erase(runner *r) {
+                boost::lock_guard<boost::mutex> guard(_M_mutex);
+                for (auto it = _M_runners.begin(), e = _M_runners.end();
+                        it != e;
+                        ++it) {
+                    if (it->get() == r) {
+                        _M_runners.erase(it);
+                        return true;
+                    }
+                }
+                return false;
             }
 
             void clear() {

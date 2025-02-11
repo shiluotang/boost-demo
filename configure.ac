@@ -25,9 +25,12 @@ AX_BOOST_SYSTEM
 AX_BOOST_THREAD
 AX_BOOST_CHRONO
 AX_BOOST_ASIO
-m4_ifdef([GTEST_LIB_CHECK],
-         [GTEST_LIB_CHECK([1.6], [HAVE_GTEST=yes], [HAVE_GTEST=no])],
-         [PKG_CHECK_MODULES([GTEST], [gtest])])
+PKG_CHECK_MODULES([GTEST], [gtest],,[
+                   m4_ifdef(
+                            [GTEST_LIB_CHECK],
+                            [GTEST_LIB_CHECK([1.6], [HAVE_GTEST=yes], [HAVE_GTEST=no])]
+                            )
+                   ])
 
 # Checks for header files.
 
